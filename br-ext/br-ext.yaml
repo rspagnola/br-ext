@@ -4,7 +4,7 @@
   become: True
   user: root
   vars_prompt:
-    - name: con_name
+    - name: ifname
       prompt: Enter connection name (check ip a for exact name)
       private: no
 
@@ -15,7 +15,7 @@
 
     - name: Create slave interface to bind to bridge
       shell: >
-        nmcli con add autoconnect yes con-name external-bridge-slave ifname '{{ con_name }}' type bridge-slave master br-ext
+        nmcli con add autoconnect yes con-name external-bridge-slave ifname '{{ ifname }}' type bridge-slave master br-ext
 
     - name: Modify bridge interface to ensure slaves come online automatically
       shell: >
@@ -23,7 +23,7 @@
 
     - name: Bring down old device
       shell: >
-        nmcli connection down '{{ con_name }}'
+        nmcli connection down '{{ ifname }}'
 
     - name: Bring up new interface
       shell: >
@@ -31,7 +31,7 @@
 
     - name: Delete old record
       shell: >
-        nmcli con del '{{ con_name }}'
+        nmcli con del '{{ ifname }}'
 
     - name: Allow guest traffic to pass over bridge
       shell: >
