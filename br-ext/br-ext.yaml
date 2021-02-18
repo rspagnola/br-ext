@@ -1,0 +1,39 @@
+---
+- hosts: all
+  gather_facts: False
+  become: True
+  user: root
+  vars_prompt:
+    - name: con_name
+      prompt: Enter connection name (check ip a for exact name)
+      private: no
+
+  tasks:
+    - name: Setup externeal bridge interface
+      shell: >
+        nmcli con add autoconnect yes con-name external-bridge ifname br-ext type bridge stp no
+
+    - name: Create slave interface to bind to bridge
+      shell: >
+        nmcli con add autoconnect yes con-name external-bridge-slave ifname '{{ con_name }}' type bridge-slave master br-ext
+
+    - name: Modify bridge interface to ensure slaves come online automatically
+      shell: >
+        nmcli connection modify external-bridge connection.autoconnect-slaves 1
+
+    - name: Bring down old device
+      shell: >
+        nmcli connection down '{{ con_name }}'
+
+    - name: Bring up new interface
+      shell: >
+        nmcli con up external-bridge-slave; nmcli con up external-bridge
+
+    - name: Delete old record
+      shell: >
+        nmcli con del '{{ con_name }}'
+
+    - name: Allow guest traffic to pass over bridge
+      shell: >
+        firewall-cmd --permanent --direct --passthrough ipv4 -I FORWARD -i br-ext -j ACCEPT;firewall-cmd --permanent --direct --passthrough ipv4 -I FORWARD -o br-ext -j ACCEPT;firewall-cmd --reload
+
